@@ -379,7 +379,7 @@
       // Generate QR Code
       qrcodeContainer.innerHTML = '';
       qrCodeInstance = new QRCode(qrcodeContainer, {
-        text: https://websiteachivetransport.vercel.app, // Pointing directly to blob URL for instant download when scanned
+        text: "https://websiteachivetransport.vercel.app/#" + encodeURIComponent(file.name), // Pointing directly to blob URL for instant download when scanned
         width: 140,
         height: 140,
         colorDark: "#090d16",
