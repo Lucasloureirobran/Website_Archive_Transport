@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="pt" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DropLink - Instant Cross-Device File Transfer</title>
+  <title>DropLink Cloud - Transferência Real entre Dispositivos</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -11,519 +11,217 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- QRCode.js Library -->
+  <!-- QRCode.js & Instascan/Html5-Qrcode Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <!-- Firebase SDK (Modular CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+    // Configuração do Firebase (Substitua pelas credenciais do seu projeto Firebase gratuito)
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "seu-projeto.firebaseapp.com",
+      projectId: "seu-projeto",
+      storageBucket: "seu-projeto.appspot.com",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    window.firebaseStorage = { storage, ref, uploadBytesResumable, getDownloadURL };
+  </script>
+
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
           colors: {
             dark: {
               950: '#090d16',
               900: '#111726',
               850: '#172033',
               800: '#1e293b',
-              700: '#334155',
               border: '#27354a'
-            },
-            accent: {
-              blue: '#3b82f6',
-              cyan: '#06b6d4',
-              emerald: '#10b981'
             }
           }
         }
       }
     }
   </script>
-
-  <style>
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #090d16;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #1e293b;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #334155;
-    }
-    
-    .drop-zone-active {
-      border-color: #3b82f6 !important;
-      background-color: rgba(59, 130, 246, 0.08) !important;
-    }
-  </style>
 </head>
-<body class="bg-dark-950 text-gray-100 font-sans min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white antialiased">
+<body class="bg-dark-950 text-gray-100 font-sans min-h-screen flex flex-col justify-between">
 
   <!-- HEADER -->
-  <header class="border-b border-dark-border/60 bg-dark-900/80 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-      
-      <!-- Logo -->
+  <header class="border-b border-dark-border bg-dark-900/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-          <i class="fa-solid fa-paper-plane text-sm"></i>
+        <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg">
+          <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
         </div>
-        <div>
-          <span class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
-            DropLink
-            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">P2P Sharing</span>
-          </span>
-        </div>
+        <span class="font-bold text-lg text-white">DropLink <span class="text-xs text-blue-400 font-mono">Cloud</span></span>
       </div>
-
-      <!-- Header Action -->
-      <div class="flex items-center gap-3">
-        <button id="clearAllBtn" class="hidden text-xs text-gray-400 hover:text-rose-400 px-3 py-1.5 rounded-lg border border-dark-border hover:border-rose-500/30 transition-all flex items-center gap-1.5">
-          <i class="fa-solid fa-trash-can text-[11px]"></i>
-          <span>Limpar Tudo</span>
-        </button>
-        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Pronto para transferência"></div>
-      </div>
-
+      <button id="openCameraBtn" class="px-4 py-2 bg-dark-800 hover:bg-dark-700 text-xs font-medium rounded-xl border border-dark-border flex items-center gap-2 transition-colors">
+        <i class="fa-solid fa-camera text-blue-400"></i>
+        <span>Ler QR Code com Câmara</span>
+      </button>
     </div>
   </header>
 
-  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-4xl w-full mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
     
-    <!-- LEFT PANEL: UPLOAD ZONE -->
-    <section class="lg:col-span-7 space-y-6">
+    <!-- UPLOAD SECTION -->
+    <section class="bg-dark-900 border border-dark-border rounded-2xl p-6 space-y-6">
+      <h2 class="text-base font-bold text-white">Enviar Ficheiro para a Nuvem</h2>
       
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          Enviar arquivos para qualquer dispositivo
-        </h1>
-        <p class="text-xs sm:text-sm text-gray-400 mt-1">
-          Arraste seus arquivos do computador e escaneie o QR Code com o celular para baixar instantaneamente.
-        </p>
+      <div id="dropZone" class="border-2 border-dashed border-dark-border hover:border-blue-500 rounded-xl p-8 text-center cursor-pointer transition-all">
+        <input type="file" id="fileInput" class="hidden">
+        <i class="fa-solid fa-file-arrow-up text-3xl text-blue-400 mb-3"></i>
+        <p class="text-sm font-semibold text-gray-200">Arraste ou clique para enviar</p>
+        <p class="text-xs text-gray-500 mt-1">O ficheiro ficará disponível globalmente via QR Code.</p>
       </div>
 
-      <!-- Drag & Drop Box -->
-      <div id="dropZone" class="relative group border-2 border-dashed border-dark-border hover:border-blue-500/60 bg-dark-900/60 rounded-2xl p-8 sm:p-12 text-center transition-all duration-300 cursor-pointer overflow-hidden">
-        
-        <input type="file" id="fileInput" multiple class="hidden">
-        
-        <!-- Subtle Glow Effect -->
-        <div class="absolute -inset-1 bg-gradient-to-r from-blue-600/10 to-cyan-600/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500 pointer-events-none"></div>
-
-        <div class="relative z-10 flex flex-col items-center">
-          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-dark-850 border border-dark-border flex items-center justify-center text-blue-400 text-2xl sm:text-3xl mb-4 group-hover:scale-110 group-hover:border-blue-500/40 transition duration-300 shadow-xl">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-          </div>
-
-          <h3 class="text-base sm:text-lg font-semibold text-white mb-1">
-            Arraste e solte arquivos aqui
-          </h3>
-          <p class="text-xs text-gray-400 mb-5 max-w-xs">
-            Suporta imagens, documentos, vídeos, PDFs ou qualquer outro formato.
-          </p>
-
-          <button type="button" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs sm:text-sm rounded-xl shadow-lg shadow-blue-600/25 transition-all flex items-center gap-2">
-            <i class="fa-solid fa-folder-open"></i>
-            <span>Selecionar do computador</span>
-          </button>
+      <!-- Barra de Progresso -->
+      <div id="progressContainer" class="hidden space-y-2">
+        <div class="flex justify-between text-xs text-gray-400">
+          <span id="uploadStatusText">A enviar para a nuvem...</span>
+          <span id="uploadPercent">0%</span>
+        </div>
+        <div class="w-full bg-dark-800 h-2 rounded-full overflow-hidden">
+          <div id="progressBar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
         </div>
       </div>
-
-      <!-- Instructions / Info Box -->
-      <div class="bg-dark-900 border border-dark-border rounded-xl p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="flex items-start gap-3">
-          <div class="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 text-xs">
-            1
-          </div>
-          <div>
-            <h4 class="text-xs font-semibold text-white">Escolha o arquivo</h4>
-            <p class="text-[11px] text-gray-400 leading-tight mt-0.5">Envie qualquer arquivo do seu PC.</p>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-3">
-          <div class="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 text-xs">
-            2
-          </div>
-          <div>
-            <h4 class="text-xs font-semibold text-white">Abra no Celular</h4>
-            <p class="text-[11px] text-gray-400 leading-tight mt-0.5">Use a câmera para ler o QR Code.</p>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-3">
-          <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
-            3
-          </div>
-          <div>
-            <h4 class="text-xs font-semibold text-white">Baixe Diretamente</h4>
-            <p class="text-[11px] text-gray-400 leading-tight mt-0.5">Download imediato e seguro.</p>
-          </div>
-        </div>
-      </div>
-
     </section>
 
-    <!-- RIGHT PANEL: FILES & QR CODE PREVIEW -->
-    <section class="lg:col-span-5 space-y-6">
+    <!-- QR CODE & DOWNLOAD SECTION -->
+    <section id="resultSection" class="bg-dark-900 border border-dark-border rounded-2xl p-6 text-center space-y-5 hidden">
+      <h2 class="text-base font-bold text-white">Pronto para Transferência</h2>
       
-      <!-- Empty State -->
-      <div id="emptyState" class="bg-dark-900 border border-dark-border rounded-2xl p-8 text-center">
-        <div class="w-12 h-12 rounded-full bg-dark-850 border border-dark-border flex items-center justify-center text-gray-500 mx-auto mb-3 text-lg">
-          <i class="fa-solid fa-file-arrow-up"></i>
-        </div>
-        <h3 class="text-sm font-semibold text-gray-300">Nenhum arquivo enviado ainda</h3>
-        <p class="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
-          Faça upload de um arquivo para gerar o link e o QR Code de transferência.
-        </p>
+      <div class="bg-white p-4 rounded-xl inline-block shadow-lg" id="qrcodeContainer"></div>
+      
+      <div class="space-y-2">
+        <label class="text-xs text-gray-400">Link Direto na Nuvem</label>
+        <input type="text" id="cloudUrlInput" readonly class="w-full bg-dark-950 border border-dark-border rounded-lg px-3 py-2 text-xs font-mono text-blue-400 text-center">
       </div>
 
-      <!-- Active File Sharing Card -->
-      <div id="activeFileCard" class="hidden bg-dark-900 border border-dark-border rounded-2xl p-5 space-y-5 shadow-2xl">
-        
-        <!-- Header / Selected File Info -->
-        <div class="flex items-start justify-between gap-3 border-b border-dark-border pb-4">
-          <div class="flex items-center gap-3 overflow-hidden">
-            <div id="fileTypeIcon" class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 text-lg">
-              <i class="fa-solid fa-file"></i>
-            </div>
-            <div class="truncate">
-              <h4 id="fileName" class="text-sm font-semibold text-white truncate">documento.pdf</h4>
-              <p id="fileSize" class="text-[11px] font-mono text-gray-400">2.4 MB</p>
-            </div>
-          </div>
-          <button id="downloadDirectBtn" title="Baixar no PC" class="px-3 py-1.5 bg-dark-800 hover:bg-dark-700 text-white rounded-lg text-xs font-medium border border-dark-border transition-colors flex items-center gap-1.5">
-            <i class="fa-solid fa-download"></i>
-            <span class="hidden sm:inline">Baixar</span>
-          </button>
-        </div>
-
-        <!-- QR Code Container -->
-        <div class="bg-dark-950 border border-dark-border rounded-xl p-5 text-center flex flex-col items-center">
-          <div class="text-xs font-mono text-gray-400 mb-3 flex items-center gap-2">
-            <i class="fa-solid fa-qrcode text-blue-400"></i>
-            <span>Escaneie com a câmera do seu celular</span>
-          </div>
-          
-          <div class="bg-white p-3 rounded-xl shadow-lg border border-white/20 inline-block" id="qrcodeContainer">
-            <!-- QR Code generated dynamically -->
-          </div>
-
-          <p class="text-[11px] text-gray-500 mt-3">
-            Aponte a câmera para abrir o link de partilha.
-          </p>
-        </div>
-
-        <!-- Shareable Link Input & Copy -->
-        <div class="space-y-2">
-          <label class="text-xs font-medium text-gray-300 flex items-center justify-between">
-            <span>Link direto de transferência</span>
-            <span id="copyToast" class="text-emerald-400 font-mono text-[11px] opacity-0 transition-opacity">Copiado!</span>
-          </label>
-          <div class="flex gap-2">
-            <input type="text" id="shareUrlInput" readonly class="w-full bg-dark-950 border border-dark-border rounded-xl px-3 py-2 text-xs font-mono text-gray-300 focus:outline-none focus:border-blue-500 selection:bg-blue-600">
-            <button id="copyLinkBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5">
-              <i class="fa-solid fa-copy"></i>
-              <span>Copiar</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Preview Modal/Container for Images or Text -->
-        <div id="previewContainer" class="hidden border-t border-dark-border pt-4">
-          <div class="text-xs font-semibold text-gray-400 mb-2">Pré-visualização</div>
-          <div id="previewContent" class="bg-dark-950 border border-dark-border rounded-xl p-2 max-h-48 overflow-auto flex justify-center">
-            <!-- Image or text preview injected here -->
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Uploaded Files List -->
-      <div id="fileListSection" class="hidden space-y-3">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Arquivos Recentes</h3>
-          <span id="fileCount" class="text-[11px] font-mono text-gray-500">0 arquivos</span>
-        </div>
-        <div id="filesList" class="space-y-2 max-h-64 overflow-y-auto pr-1">
-          <!-- Dynamic List of Files -->
-        </div>
-      </div>
-
+      <a id="downloadCloudBtn" href="#" target="_blank" class="block w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-medium transition-colors">
+        Descarregar Ficheiro
+      </a>
     </section>
 
   </main>
 
-  <!-- FOOTER -->
-  <footer class="border-t border-dark-border/40 py-6 text-center text-xs text-gray-500">
-    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <p>DropLink &copy; Transferência local e instantânea de arquivos.</p>
-      <div class="flex items-center gap-4 text-gray-400">
-        <span class="flex items-center gap-1.5"><i class="fa-solid fa-lock text-[10px] text-emerald-400"></i> Local storage / In-memory</span>
+  <!-- MODAL DA CÂMARA (LEITOR DE QR CODE) -->
+  <div id="cameraModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-dark-900 border border-dark-border rounded-2xl max-w-md w-full p-6 space-y-4 relative">
+      <div class="flex justify-between items-center">
+        <h3 class="text-sm font-bold text-white">Aponte para o QR Code</h3>
+        <button id="closeCameraBtn" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
+      <div id="reader" class="w-full rounded-xl overflow-hidden border border-dark-border"></div>
     </div>
-  </footer>
+  </div>
 
-  <script>
-    // State management
-    const uploadedFiles = [];
-    let activeFileIndex = null;
-    let qrCodeInstance = null;
-
-    // DOM Elements
+  <script type="module">
+    // Lógica de Upload e Leitor de Câmara
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
-    const emptyState = document.getElementById('emptyState');
-    const activeFileCard = document.getElementById('activeFileCard');
-    const fileListSection = document.getElementById('fileListSection');
-    const filesList = document.getElementById('filesList');
-    const fileCount = document.getElementById('fileCount');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-
-    // Active File Elements
-    const fileName = document.getElementById('fileName');
-    const fileSize = document.getElementById('fileSize');
-    const fileTypeIcon = document.getElementById('fileTypeIcon');
-    const shareUrlInput = document.getElementById('shareUrlInput');
-    const copyLinkBtn = document.getElementById('copyLinkBtn');
-    const copyToast = document.getElementById('copyToast');
-    const downloadDirectBtn = document.getElementById('downloadDirectBtn');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const uploadPercent = document.getElementById('uploadPercent');
+    const resultSection = document.getElementById('resultSection');
     const qrcodeContainer = document.getElementById('qrcodeContainer');
-    const previewContainer = document.getElementById('previewContainer');
-    const previewContent = document.getElementById('previewContent');
+    const cloudUrlInput = document.getElementById('cloudUrlInput');
+    const downloadCloudBtn = document.getElementById('downloadCloudBtn');
 
-    // Trigger File Dialog
     dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleUpload(e.target.files[0]));
 
-    // Drag & Drop Listeners
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.add('drop-zone-active');
-      }, false);
-    });
+    async function handleUpload(file) {
+      if (!file) return;
+      progressContainer.classList.remove('hidden');
+      resultSection.classList.add('hidden');
 
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.remove('drop-zone-active');
-      }, false);
-    });
+      // Simulação ou chamada real do Firebase Storage
+      // Certifique-se de configurar o objeto window.firebaseStorage após criar o projeto no Firebase.
+      try {
+        const { storage, ref, uploadBytesResumable, getDownloadURL } = window.firebaseStorage;
+        const storageRef = ref(storage, 'uploads/' + Date.now() + '_' + file.name);
+        const uploadTask = uploadBytesResumable(storageRef, file);
 
-    dropZone.addEventListener('drop', (e) => {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      handleFiles(files);
-    });
-
-    fileInput.addEventListener('change', (e) => {
-      handleFiles(e.target.files);
-    });
-
-    // Handle File Selection
-    function handleFiles(files) {
-      if (!files.length) return;
-
-      Array.from(files).forEach(file => {
-        const fileObj = {
-          id: Date.now() + Math.random().toString(36).substr(2, 4),
-          name: file.name,
-          size: formatBytes(file.size),
-          type: file.type,
-          rawFile: file,
-          url: URL.createObjectURL(file)
-        };
-
-        uploadedFiles.unshift(fileObj);
-      });
-
-      selectFile(0);
-      renderFileList();
+        uploadTask.on('state_changed', 
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            progressBar.style.width = progress + '%';
+            uploadPercent.textContent = Math.round(progress) + '%';
+          }, 
+          (error) => {
+            alert('Erro no envio: ' + error.message);
+          }, 
+          async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            showResult(downloadURL);
+          }
+        );
+      } catch (err) {
+        alert("Configure as credenciais do Firebase no código script module para ativar o armazenamento em nuvem.");
+      }
     }
 
-    // Select Active File
-    function selectFile(index) {
-      if (index < 0 || index >= uploadedFiles.length) return;
-      
-      activeFileIndex = index;
-      const file = uploadedFiles[index];
+    function showResult(url) {
+      progressContainer.classList.add('hidden');
+      resultSection.classList.remove('hidden');
+      cloudUrlInput.value = url;
+      downloadCloudBtn.href = url;
 
-      emptyState.classList.add('hidden');
-      activeFileCard.classList.remove('hidden');
-
-      fileName.textContent = file.name;
-      fileSize.textContent = file.size;
-      fileTypeIcon.innerHTML = getFileIcon(file.type, file.name);
-
-      // Usando estritamente o domínio público oficial da Vercel
-      const domainBase = "https://websiteachivetransport.vercel.app";
-      const shareableUrl = domainBase + '/#file=' + encodeURIComponent(file.name);
-      shareUrlInput.value = shareableUrl;
-
-      // Generate QR Code pointing to public URL
       qrcodeContainer.innerHTML = '';
-      qrCodeInstance = new QRCode(qrcodeContainer, {
-        text: shareableUrl,
-        width: 140,
-        height: 140,
+      new QRCode(qrcodeContainer, {
+        text: url,
+        width: 160,
+        height: 160,
         colorDark: "#090d16",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H
       });
-
-      // Direct Download Handler
-      downloadDirectBtn.onclick = () => {
-        const a = document.createElement('a');
-        a.href = file.url;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      };
-
-      // Preview Handling
-      setupPreview(file);
-
-      renderFileList();
     }
 
-    // Setup File Preview (Images and Text)
-    function setupPreview(file) {
-      previewContent.innerHTML = '';
-      
-      if (file.type.startsWith('image/')) {
-        previewContainer.classList.remove('hidden');
-        const img = document.createElement('img');
-        img.src = file.url;
-        img.className = 'max-h-40 rounded object-contain';
-        previewContent.appendChild(img);
-      } else if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.json') || file.name.endsWith('.md')) {
-        previewContainer.classList.remove('hidden');
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const pre = document.createElement('pre');
-          pre.className = 'text-[11px] font-mono text-gray-300 whitespace-pre-wrap leading-relaxed max-h-36 overflow-auto w-full';
-          pre.textContent = e.target.result.slice(0, 1000);
-          previewContent.appendChild(pre);
-        };
-        reader.readAsText(file.rawFile);
-      } else {
-        previewContainer.classList.add('hidden');
-      }
-    }
+    // Leitor de QR Code via Câmara
+    const openCameraBtn = document.getElementById('openCameraBtn');
+    const cameraModal = document.getElementById('cameraModal');
+    const closeCameraBtn = document.getElementById('closeCameraBtn');
+    let html5QrCode = null;
 
-    // Render Recent Files List
-    function renderFileList() {
-      if (uploadedFiles.length === 0) {
-        fileListSection.classList.add('hidden');
-        emptyState.classList.remove('hidden');
-        activeFileCard.classList.add('hidden');
-        clearAllBtn.classList.add('hidden');
-        return;
-      }
-
-      fileListSection.classList.remove('hidden');
-      clearAllBtn.classList.remove('hidden');
-      fileCount.textContent = `${uploadedFiles.length} ${uploadedFiles.length === 1 ? 'arquivo' : 'arquivos'}`;
-
-      filesList.innerHTML = uploadedFiles.map((f, idx) => {
-        const isActive = idx === activeFileIndex;
-        return `
-          <div onclick="selectFile(${idx})" class="p-3 rounded-xl border ${isActive ? 'bg-blue-600/10 border-blue-500/40' : 'bg-dark-900 border-dark-border hover:border-gray-600'} transition-all cursor-pointer flex items-center justify-between gap-3 group">
-            <div class="flex items-center gap-3 overflow-hidden">
-              <div class="text-sm ${isActive ? 'text-blue-400' : 'text-gray-400'} shrink-0">
-                ${getFileIcon(f.type, f.name)}
-              </div>
-              <div class="truncate">
-                <div class="text-xs font-semibold ${isActive ? 'text-blue-300' : 'text-gray-200'} truncate">${escapeHtml(f.name)}</div>
-                <div class="text-[10px] font-mono text-gray-500">${f.size}</div>
-              </div>
-            </div>
-            <button onclick="event.stopPropagation(); removeFile(${idx})" class="text-gray-500 hover:text-rose-400 p-1 transition-colors opacity-0 group-hover:opacity-100" title="Remover">
-              <i class="fa-solid fa-xmark text-xs"></i>
-            </button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Remove single file
-    function removeFile(index) {
-      URL.revokeObjectURL(uploadedFiles[index].url);
-      uploadedFiles.splice(index, 1);
-
-      if (uploadedFiles.length === 0) {
-        activeFileIndex = null;
-      } else if (activeFileIndex >= uploadedFiles.length) {
-        activeFileIndex = uploadedFiles.length - 1;
-        selectFile(activeFileIndex);
-      } else {
-        selectFile(activeFileIndex);
-      }
-
-      renderFileList();
-    }
-
-    // Clear All Files
-    clearAllBtn.addEventListener('click', () => {
-      uploadedFiles.forEach(f => URL.revokeObjectURL(f.url));
-      uploadedFiles.length = 0;
-      activeFileIndex = null;
-      renderFileList();
+    openCameraBtn.addEventListener('click', () => {
+      cameraModal.classList.remove('hidden');
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" }, 
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          if (decodedText.startsWith('http')) {
+            window.location.href = decodedText; // Redireciona automaticamente para o link do ficheiro lido
+          }
+        },
+        (errorMessage) => {}
+      ).catch(err => {
+        console.error("Erro ao abrir câmara:", err);
+      });
     });
 
-    // Copy Shareable Link to Clipboard
-    copyLinkBtn.addEventListener('click', () => {
-      shareUrlInput.select();
-      document.execCommand('copy');
-      
-      copyToast.classList.remove('opacity-0');
-      setTimeout(() => {
-        copyToast.classList.add('opacity-0');
-      }, 2000);
+    closeCameraBtn.addEventListener('click', () => {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          cameraModal.classList.add('hidden');
+        }).catch(err => console.log(err));
+      } else {
+        cameraModal.classList.add('hidden');
+      }
     });
-
-    // Utility: Format File Sizes
-    function formatBytes(bytes, decimals = 1) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const dm = decimals < 0 ? 0 : decimals;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-    }
-
-    // Utility: Return matching icon for file types
-    function getFileIcon(mimeType, filename) {
-      if (mimeType.startsWith('image/')) return '<i class="fa-solid fa-file-image"></i>';
-      if (mimeType.startsWith('video/')) return '<i class="fa-solid fa-file-video"></i>';
-      if (mimeType.startsWith('audio/')) return '<i class="fa-solid fa-file-audio"></i>';
-      if (mimeType.includes('pdf')) return '<i class="fa-solid fa-file-pdf"></i>';
-      if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return '<i class="fa-solid fa-file-zipper"></i>';
-      if (filename.endsWith('.txt') || filename.endsWith('.md')) return '<i class="fa-solid fa-file-lines"></i>';
-      if (filename.endsWith('.js') || filename.endsWith('.html') || filename.endsWith('.py')) return '<i class="fa-solid fa-file-code"></i>';
-      return '<i class="fa-solid fa-file"></i>';
-    }
-
-    // Utility: Escape HTML
-    function escapeHtml(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
   </script>
 </body>
 </html>
