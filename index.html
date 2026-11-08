@@ -191,7 +191,7 @@
         </p>
       </div>
 
-      <!-- Active File Sharing Card (Visible when a file is selected) -->
+      <!-- Active File Sharing Card -->
       <div id="activeFileCard" class="hidden bg-dark-900 border border-dark-border rounded-2xl p-5 space-y-5 shadow-2xl">
         
         <!-- Header / Selected File Info -->
@@ -223,7 +223,7 @@
           </div>
 
           <p class="text-[11px] text-gray-500 mt-3">
-            O dispositivo receptor deve estar na mesma rede ou usar o link direto.
+            Aponte a câmera para aceder ao link de partilha na web.
           </p>
         </div>
 
@@ -352,7 +352,6 @@
         uploadedFiles.unshift(fileObj);
       });
 
-      // Select newly added file
       selectFile(0);
       renderFileList();
     }
@@ -371,15 +370,15 @@
       fileSize.textContent = file.size;
       fileTypeIcon.innerHTML = getFileIcon(file.type, file.name);
 
-      // Create a shareable link simulated via Object URL / Anchor
-      // In production, this would be a local server IP or WebRTC code
-      const shareableUrl = window.location.origin + window.location.pathname + '#file=' + encodeURIComponent(file.name);
+      // Usando estritamente o domínio público oficial da Vercel para o link e QR Code
+      const domainBase = "https://websiteachivetransport.vercel.app";
+      const shareableUrl = domainBase + '/#file=' + encodeURIComponent(file.name);
       shareUrlInput.value = shareableUrl;
 
-      // Generate QR Code
+      // Generate QR Code pointing to public URL
       qrcodeContainer.innerHTML = '';
       qrCodeInstance = new QRCode(qrcodeContainer, {
-        text: "https://websiteachivetransport.vercel.app/#" + encodeURIComponent(file.name), // Pointing directly to blob URL for instant download when scanned
+        text: shareableUrl,
         width: 140,
         height: 140,
         colorDark: "#090d16",
@@ -400,7 +399,6 @@
       // Preview Handling
       setupPreview(file);
 
-      // Highlight active file in list
       renderFileList();
     }
 
@@ -420,7 +418,7 @@
         reader.onload = (e) => {
           const pre = document.createElement('pre');
           pre.className = 'text-[11px] font-mono text-gray-300 whitespace-pre-wrap leading-relaxed max-h-36 overflow-auto w-full';
-          pre.textContent = e.target.result.slice(0, 1000); // Max 1000 chars preview
+          pre.textContent = e.target.result.slice(0, 1000);
           previewContent.appendChild(pre);
         };
         reader.readAsText(file.rawFile);
