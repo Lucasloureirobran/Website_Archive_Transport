@@ -379,7 +379,7 @@
       // Generate QR Code
       qrcodeContainer.innerHTML = '';
       qrCodeInstance = new QRCode(qrcodeContainer, {
-        text: file.url, // Pointing directly to blob URL for instant download when scanned
+        text: https://websiteachivetransport.vercel.app, // Pointing directly to blob URL for instant download when scanned
         width: 140,
         height: 140,
         colorDark: "#090d16",
@@ -390,7 +390,7 @@
       // Direct Download Handler
       downloadDirectBtn.onclick = () => {
         const a = document.createElement('a');
-        a.href = file.url;
+        a.href = https://websiteachivetransport.vercel.app;
         a.download = file.name;
         document.body.appendChild(a);
         a.click();
@@ -411,7 +411,7 @@
       if (file.type.startsWith('image/')) {
         previewContainer.classList.remove('hidden');
         const img = document.createElement('img');
-        img.src = file.url;
+        img.src = https://websiteachivetransport.vercel.app;
         img.className = 'max-h-40 rounded object-contain';
         previewContent.appendChild(img);
       } else if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.json') || file.name.endsWith('.md')) {
