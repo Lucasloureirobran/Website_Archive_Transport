@@ -371,15 +371,13 @@
       fileSize.textContent = file.size;
       fileTypeIcon.innerHTML = getFileIcon(file.type, file.name);
 
-      // Create a shareable link simulated via Object URL / Anchor
-      // In production, this would be a local server IP or WebRTC code
-      const shareableUrl = window.location.origin + window.location.pathname + '#file=' + encodeURIComponent(file.name);
-      shareUrlInput.value = shareableUrl;
+      const targetUrl = "https://websiteachivetransport.vercel.app";
+      shareUrlInput.value = targetUrl;
 
       // Generate QR Code
       qrcodeContainer.innerHTML = '';
       qrCodeInstance = new QRCode(qrcodeContainer, {
-        text: file.url, // Pointing directly to blob URL for instant download when scanned
+        text: targetUrl,
         width: 140,
         height: 140,
         colorDark: "#090d16",
@@ -492,12 +490,12 @@
     // Copy Shareable Link to Clipboard
     copyLinkBtn.addEventListener('click', () => {
       shareUrlInput.select();
-      document.execCommand('copy');
-      
-      copyToast.classList.remove('opacity-0');
-      setTimeout(() => {
-        copyToast.classList.add('opacity-0');
-      }, 2000);
+      navigator.clipboard.writeText(shareUrlInput.value).then(() => {
+        copyToast.classList.remove('opacity-0');
+        setTimeout(() => {
+          copyToast.classList.add('opacity-0');
+        }, 2000);
+      });
     });
 
     // Utility: Format File Sizes
