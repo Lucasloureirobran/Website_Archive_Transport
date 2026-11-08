@@ -223,7 +223,7 @@
           </div>
 
           <p class="text-[11px] text-gray-500 mt-3">
-            Aponte a câmera para aceder ao link de partilha na web.
+            Aponte a câmera para abrir o link de partilha.
           </p>
         </div>
 
@@ -370,7 +370,7 @@
       fileSize.textContent = file.size;
       fileTypeIcon.innerHTML = getFileIcon(file.type, file.name);
 
-      // Usando estritamente o domínio público oficial da Vercel para o link e QR Code
+      // Usando estritamente o domínio público oficial da Vercel
       const domainBase = "https://websiteachivetransport.vercel.app";
       const shareableUrl = domainBase + '/#file=' + encodeURIComponent(file.name);
       shareUrlInput.value = shareableUrl;
