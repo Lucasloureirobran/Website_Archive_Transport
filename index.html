@@ -11,23 +11,23 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- QRCode.js & Instascan/Html5-Qrcode Library -->
+  <!-- QRCode.js & Html5-Qrcode Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-  <!-- Firebase SDK (Modular CDN) -->
+  <!-- Firebase SDK (Modular CDN com as suas credenciais) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-    // Configuração do Firebase (Substitua pelas credenciais do seu projeto Firebase gratuito)
     const firebaseConfig = {
-      apiKey: "SUA_API_KEY",
-      authDomain: "seu-projeto.firebaseapp.com",
-      projectId: "seu-projeto",
-      storageBucket: "seu-projeto.appspot.com",
-      messagingSenderId: "SEU_SENDER_ID",
-      appId: "SEU_APP_ID"
+      apiKey: "AIzaSyCM3emrQ2H8DIDiBvrfiqQ7Y7_OaipXx1M",
+      authDomain: "archivetrasnfer.firebaseapp.com",
+      projectId: "archivetrasnfer",
+      storageBucket: "archivetrasnfer.firebasestorage.app",
+      messagingSenderId: "165069438021",
+      appId: "1:165069438021:web:8659fc5452c5cac131372c",
+      measurementId: "G-6GSKK9PBJP"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -128,7 +128,6 @@
   </div>
 
   <script type="module">
-    // Lógica de Upload e Leitor de Câmara
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
     const progressContainer = document.getElementById('progressContainer');
@@ -147,8 +146,6 @@
       progressContainer.classList.remove('hidden');
       resultSection.classList.add('hidden');
 
-      // Simulação ou chamada real do Firebase Storage
-      // Certifique-se de configurar o objeto window.firebaseStorage após criar o projeto no Firebase.
       try {
         const { storage, ref, uploadBytesResumable, getDownloadURL } = window.firebaseStorage;
         const storageRef = ref(storage, 'uploads/' + Date.now() + '_' + file.name);
@@ -169,7 +166,7 @@
           }
         );
       } catch (err) {
-        alert("Configure as credenciais do Firebase no código script module para ativar o armazenamento em nuvem.");
+        alert("Erro ao conectar com o Firebase Storage. Verifique as regras de segurança.");
       }
     }
 
@@ -204,7 +201,7 @@
         { fps: 10, qrbox: 250 },
         (decodedText) => {
           if (decodedText.startsWith('http')) {
-            window.location.href = decodedText; // Redireciona automaticamente para o link do ficheiro lido
+            window.location.href = decodedText;
           }
         },
         (errorMessage) => {}
